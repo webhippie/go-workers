@@ -35,6 +35,12 @@ func Process(queue string, job jobFunc, concurrency int, mids ...Action) {
 	managers[queue] = newManager(queue, job, concurrency, mids...)
 }
 
+func Wait() {
+	for _, manager := range managers {
+		manager.Wait()
+	}
+}
+
 func Run() {
 	Start()
 	go handleSignals()
