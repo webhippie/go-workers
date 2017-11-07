@@ -1,0 +1,122 @@
+workspace:
+  base: /srv/app
+  path: src/github.com/webhippie/workers
+
+pipeline:
+  cache-restore:
+    image: plugins/s3-cache:1
+    pull: true
+    secrets: [ cache_s3_endpoint, cache_s3_access_key, cache_s3_secret_key ]
+    restore: true
+    when:
+      local: false
+
+  lib-prepare:
+    image: webhippie/golang:edge
+    pull: true
+    environment:
+      - CGO_ENABLED=0
+      - GOPATH=/srv/app
+      - TAGS=
+    commands:
+      - make clean
+      - make retool
+      - make sync
+
+  lib-vet:
+    image: webhippie/golang:edge
+    pull: true
+    group: lib
+    environment:
+      - CGO_ENABLED=0
+      - GOPATH=/srv/app
+      - TAGS=
+    commands:
+      - make vet
+
+  lib-check:
+    image: webhippie/golang:edge
+    pull: true
+    group: lib
+    environment:
+      - CGO_ENABLED=0
+      - GOPATH=/srv/app
+      - TAGS=
+    commands:
+      - make megacheck
+
+  lib-lint:
+    image: webhippie/golang:edge
+    pull: true
+    group: lib
+    environment:
+      - CGO_ENABLED=0
+      - GOPATH=/srv/app
+      - TAGS=
+    commands:
+      - make lint
+
+  lib-test:
+    image: webhippie/golang:edge
+    pull: true
+    group: lib
+    environment:
+      - CGO_ENABLED=0
+      - GOPATH=/srv/app
+      - TAGS=
+    commands:
+      - make test
+
+  lib-build:
+    image: webhippie/golang:edge
+    pull: true
+    group: lib
+    environment:
+      - CGO_ENABLED=0
+      - GOPATH=/srv/app
+      - TAGS=
+    commands:
+      - make build
+
+  cache-rebuild:
+    image: plugins/s3-cache:1
+    pull: true
+    secrets: [ cache_s3_endpoint, cache_s3_access_key, cache_s3_secret_key ]
+    rebuild: true
+    mount:
+      - _tools/bin
+      - _tools/pkg
+      - vendor
+    when:
+      local: false
+      event: [ push ]
+      branch: [ master ]
+
+  cache-flush:
+    image: plugins/s3-cache:1
+    pull: true
+    secrets: [ cache_s3_endpoint, cache_s3_access_key, cache_s3_secret_key ]
+    flush: true
+    flush_age: 14
+    when:
+      local: false
+      event: [ push ]
+      branch: [ master ]
+
+  github-release:
+    image: plugins/github-release:1
+    pull: true
+    secrets: [ github_token ]
+    files:
+      - dist/release/*
+    when:
+      event: [ tag ]
+      branch: [ master ]
+
+  notify-gitter:
+    image: plugins/gitter:1
+    pull: true
+    secrets: [ gitter_webhook ]
+    when:
+      local: false
+      status: [ success, failure ]
