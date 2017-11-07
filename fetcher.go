@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/go-kit/kit/log/level"
 )
 
 type Fetcher interface {
@@ -96,7 +97,11 @@ func (f *fetch) tryFetchMessage(messages chan string) {
 	if err != nil {
 		// If redis returns null, the queue is empty. Just ignore the error.
 		if err.Error() != "redigo: nil returned" {
-			Logger.Println("ERR: ", err)
+			level.Error(Logger).Log(
+				"msg", "failed to fetch messages",
+				"err", err,
+			)
+
 			time.Sleep(1 * time.Second)
 		}
 	} else {
@@ -108,7 +113,12 @@ func (f *fetch) sendMessage(message string) {
 	msg, err := NewMsg(message)
 
 	if err != nil {
-		Logger.Println("ERR: Couldn't create message from", message, ":", err)
+		level.Error(Logger).Log(
+			"msg", "failed to create message",
+			"err", err,
+			"message", message,
+		)
+
 		return
 	}
 
@@ -153,7 +163,10 @@ func (f *fetch) inprogressMessages() []string {
 
 	messages, err := redis.Strings(conn.Do("lrange", f.inprogressQueue(), 0, -1))
 	if err != nil {
-		Logger.Println("ERR: ", err)
+		level.Error(Logger).Log(
+			"msg", "failed to fetch inprogress",
+			"err", err,
+		)
 	}
 
 	return messages

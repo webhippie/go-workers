@@ -2,6 +2,8 @@ package workers
 
 import (
 	"time"
+
+	"github.com/go-kit/kit/log/level"
 )
 
 type MiddlewareStats struct{}
@@ -32,6 +34,9 @@ func incrementStats(metric string) {
 	conn.Send("incr", Config.Namespace+"stat:"+metric+":"+today)
 
 	if _, err := conn.Do("exec"); err != nil {
-		Logger.Println("couldn't save stats:", err)
+		level.Error(Logger).Log(
+			"msg", "failed to store stats",
+			"err", err,
+		)
 	}
 }

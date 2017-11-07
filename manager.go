@@ -3,7 +3,11 @@ package workers
 import (
 	"strings"
 	"sync"
+
+	"github.com/go-kit/kit/log/level"
 )
+
+type jobFunc func(message *Msg)
 
 type manager struct {
 	queue       string
@@ -32,7 +36,13 @@ func (m *manager) prepare() {
 }
 
 func (m *manager) quit() {
-	Logger.Println("quitting queue", m.queueName(), "(waiting for", m.processing(), "/", len(m.workers), "workers).")
+	level.Debug(Logger).Log(
+		"msg", "quitting queue",
+		"name", m.queueName(),
+		"workers", len(m.workers),
+		"waiting", m.processing(),
+	)
+
 	m.prepare()
 
 	m.workersM.Lock()
@@ -50,7 +60,11 @@ func (m *manager) quit() {
 }
 
 func (m *manager) manage() {
-	Logger.Println("processing queue", m.queueName(), "with", m.concurrency, "workers.")
+	level.Debug(Logger).Log(
+		"msg", "processing queue",
+		"name", m.queueName(),
+		"concurrency", m.concurrency,
+	)
 
 	go m.fetch.Fetch()
 

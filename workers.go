@@ -2,11 +2,10 @@ package workers
 
 import (
 	"errors"
-	"fmt"
-	"log"
-	"net/http"
 	"os"
 	"sync"
+
+	"github.com/go-kit/kit/log"
 )
 
 const (
@@ -14,18 +13,21 @@ const (
 	SCHEDULED_JOBS_KEY = "schedule"
 )
 
-var Logger WorkersLogger = log.New(os.Stdout, "workers: ", log.Ldate|log.Lmicroseconds)
+var (
+	Logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))
 
-var managers = make(map[string]*manager)
-var schedule *scheduled
-var control = make(map[string]chan string)
-var access sync.Mutex
-var started bool
+	Middleware = NewMiddleware(
+		&MiddlewareLogging{},
+		&MiddlewareRetry{},
+		&MiddlewareStats{},
+	)
 
-var Middleware = NewMiddleware(
-	&MiddlewareLogging{},
-	&MiddlewareRetry{},
-	&MiddlewareStats{},
+	managers = make(map[string]*manager)
+	control  = make(map[string]chan string)
+
+	schedule *scheduled
+	access   sync.Mutex
+	started  bool
 )
 
 func Process(queue string, job jobFunc, concurrency int, mids ...Action) {
@@ -35,29 +37,15 @@ func Process(queue string, job jobFunc, concurrency int, mids ...Action) {
 	managers[queue] = newManager(queue, job, concurrency, mids...)
 }
 
+func Run() {
+	Start()
+	Wait()
+}
+
 func Wait() {
 	for _, manager := range managers {
 		manager.Wait()
 	}
-}
-
-func Run() {
-	Start()
-	go handleSignals()
-	waitForExit()
-}
-
-func ResetManagers() error {
-	access.Lock()
-	defer access.Unlock()
-
-	if started {
-		return errors.New("Cannot reset worker managers while workers are running")
-	}
-
-	managers = make(map[string]*manager)
-
-	return nil
 }
 
 func Start() {
@@ -71,6 +59,7 @@ func Start() {
 	runHooks(beforeStart)
 	startSchedule()
 	startManagers()
+	runHooks(afterStart)
 
 	started = true
 }
@@ -83,22 +72,27 @@ func Quit() {
 		return
 	}
 
+	runHooks(beforeQuit)
 	quitManagers()
 	quitSchedule()
-	runHooks(duringDrain)
-	waitForExit()
+	runHooks(afterQuit)
+
+	Wait()
 
 	started = false
 }
 
-func StatsServer(port int) {
-	http.HandleFunc("/stats", Stats)
+func Reset() error {
+	access.Lock()
+	defer access.Unlock()
 
-	Logger.Println("Stats are available at", fmt.Sprint("http://localhost:", port, "/stats"))
-
-	if err := http.ListenAndServe(fmt.Sprint(":", port), nil); err != nil {
-		Logger.Println(err)
+	if started {
+		return errors.New("Cannot reset worker managers while workers are running")
 	}
+
+	managers = make(map[string]*manager)
+
+	return nil
 }
 
 func startSchedule() {
@@ -125,11 +119,5 @@ func startManagers() {
 func quitManagers() {
 	for _, m := range managers {
 		go (func(m *manager) { m.quit() })(m)
-	}
-}
-
-func waitForExit() {
-	for _, manager := range managers {
-		manager.Wait()
 	}
 }

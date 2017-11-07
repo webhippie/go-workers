@@ -1,25 +1,44 @@
 package workers
 
-var beforeStart []func()
-var duringDrain []func()
+var (
+	beforeStart []HookFunc
+	afterStart  []HookFunc
+	beforeQuit  []HookFunc
+	afterQuit   []HookFunc
+)
 
-func BeforeStart(f func()) {
+type HookFunc func()
+
+// BeforeStart appends a hook before start.
+func BeforeStart(f HookFunc) {
 	access.Lock()
 	defer access.Unlock()
 	beforeStart = append(beforeStart, f)
 }
 
-// func AfterStart
-// func BeforeQuit
-// func AfterQuit
-
-func DuringDrain(f func()) {
+// AfterStart appends a hook after start.
+func AfterStart(f HookFunc) {
 	access.Lock()
 	defer access.Unlock()
-	duringDrain = append(duringDrain, f)
+	afterStart = append(afterStart, f)
 }
 
-func runHooks(hooks []func()) {
+// BeforeQuit appends a hook before quit.
+func BeforeQuit(f HookFunc) {
+	access.Lock()
+	defer access.Unlock()
+	beforeQuit = append(beforeQuit, f)
+}
+
+// AfterQuit appends a hook after quit.
+func AfterQuit(f HookFunc) {
+	access.Lock()
+	defer access.Unlock()
+	afterQuit = append(afterQuit, f)
+}
+
+// runHooks gets called internally to run the hooks.
+func runHooks(hooks []HookFunc) {
 	for _, f := range hooks {
 		f()
 	}

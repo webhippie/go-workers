@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/go-kit/kit/log/level"
 )
 
 type stats struct {
@@ -62,7 +64,10 @@ func Stats(w http.ResponseWriter, req *http.Request) {
 	r, err := conn.Do("exec")
 
 	if err != nil {
-		Logger.Println("couldn't retrieve stats:", err)
+		level.Error(Logger).Log(
+			"msg", "failed to retrieve stats",
+			"err", err,
+		)
 	}
 
 	results := r.([]interface{})
