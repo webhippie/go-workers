@@ -38,6 +38,6 @@ func (m Memory) Ping() error {
 }
 
 // Close implements the driver interface.
-func (r Redis) Close() error {
+func (m Memory) Close() error {
 	return nil
 }

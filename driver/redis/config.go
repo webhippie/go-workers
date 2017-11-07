@@ -2,7 +2,6 @@ package redis
 
 var (
 	defaultHost    = "localhost:6379"
-	defaultPort    = 6379
 	defaultTimeout = 30
 	defaultMaxIdle = 3
 )

@@ -2,9 +2,7 @@ package redis
 
 import (
 	"errors"
-	"net"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -33,7 +31,7 @@ func New(opts ...Option) *Redis {
 			MaxIdle:     r.config.MaxIdle,
 			IdleTimeout: 180 * time.Second,
 			Dial: func() (redis.Conn, error) {
-				conn, err := redis.Dial("tcp", net.JoinHostPort(r.config.Host, strconv.Itoa(r.config.Port)))
+				conn, err := redis.Dial("tcp", r.config.Host)
 
 				if err != nil {
 					return nil, err
@@ -54,13 +52,6 @@ func New(opts ...Option) *Redis {
 				}
 
 				return conn, err
-			},
-			TestOnBorrow: func(conn redis.Conn, t time.Time) error {
-				if _, err := conn.Do("PING"); err != nil {
-					return err
-				}
-
-				return nill
 			},
 		}
 	}

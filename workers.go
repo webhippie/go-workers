@@ -47,11 +47,7 @@ type Workers struct {
 
 // Start simply starts the worker process.
 func (w *Workers) Start() error {
-	if err := w.driver.Ping(); err != nil {
-		return err
-	}
-
-	return nil
+	return w.driver.Ping()
 }
 
 // Stop simply stops the worker process.
