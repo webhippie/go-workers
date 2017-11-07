@@ -8,10 +8,14 @@ import (
 )
 
 var (
+	// ErrNoConfigProvided defines an error if no config is provided.
 	ErrNoConfigProvided = errors.New("no configuration provided")
+
+	// ErrNoDriverProvided defines an error if no driver is provided.
 	ErrNoDriverProvided = errors.New("no driver provided")
 )
 
+// New initializes a new worker.
 func New(opts ...Option) (*Workers, error) {
 	w := &Workers{}
 
@@ -34,12 +38,14 @@ func New(opts ...Option) (*Workers, error) {
 	return w, nil
 }
 
+// Workers defines a simple struct with all required actions.
 type Workers struct {
 	config *Config
 	logger log.Logger
 	driver Driver
 }
 
+// Start simply starts the worker process.
 func (w *Workers) Start() error {
 	if err := w.driver.Ping(); err != nil {
 		return err
@@ -48,6 +54,7 @@ func (w *Workers) Start() error {
 	return nil
 }
 
+// Stop simply stops the worker process.
 func (w *Workers) Stop() error {
-	return nil
+	return w.driver.Close()
 }

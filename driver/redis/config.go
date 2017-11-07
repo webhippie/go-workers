@@ -7,6 +7,7 @@ var (
 	defaultMaxIdle = 3
 )
 
+// Config represents the redis driver configuration.
 type Config struct {
 	Host     string
 	Password string
@@ -15,6 +16,7 @@ type Config struct {
 	MaxIdle  int
 }
 
+// WithDefaults initializes useful default config values.
 func (c *Config) WithDefaults() *Config {
 	if c.Host == "" {
 		c.Host = defaultHost

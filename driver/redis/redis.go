@@ -11,6 +11,7 @@ import (
 	"github.com/webhippie/workers/log"
 )
 
+// New initializes a new memory driver.
 func New(opts ...Option) *Redis {
 	r := &Redis{}
 
@@ -67,12 +68,14 @@ func New(opts ...Option) *Redis {
 	return r
 }
 
+// Redis defines a simple struct with all required actions.
 type Redis struct {
 	config *Config
 	logger log.Logger
 	pool   *redis.Pool
 }
 
+// Ping implements the driver interface.
 func (r Redis) Ping() error {
 	for i := 0; i < r.config.Timeout; i++ {
 		conn := r.pool.Get()
@@ -91,4 +94,9 @@ func (r Redis) Ping() error {
 	}
 
 	return errors.New("redis ping attempts failed")
+}
+
+// Close implements the driver interface.
+func (r Redis) Close() error {
+	return r.pool.Close()
 }

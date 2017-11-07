@@ -6,12 +6,14 @@ var (
 	defaultPollIntervall = 15
 )
 
+// Config represents the workers configuration.
 type Config struct {
 	Identifier    string
 	Namespace     string
 	PollIntervall int
 }
 
+// WithDefaults initializes useful default config values.
 func (c *Config) WithDefaults() *Config {
 	if c.Identifier == "" {
 		c.Identifier = defaultIdentifier

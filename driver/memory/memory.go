@@ -6,6 +6,7 @@ import (
 	"github.com/webhippie/workers/log"
 )
 
+// New initializes a new memory driver.
 func New(opts ...Option) *Memory {
 	m := &Memory{}
 
@@ -25,11 +26,18 @@ func New(opts ...Option) *Memory {
 	return m
 }
 
+// Memory defines a simple struct with all required actions.
 type Memory struct {
 	config *Config
 	logger log.Logger
 }
 
+// Ping implements the driver interface.
 func (m Memory) Ping() error {
+	return nil
+}
+
+// Close implements the driver interface.
+func (r Redis) Close() error {
 	return nil
 }
