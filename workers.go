@@ -13,33 +13,41 @@ var (
 )
 
 func New(opts ...Option) (*Workers, error) {
-	workers := &Workers{}
+	w := &Workers{}
 
 	for _, opt := range opts {
-		opt(workers)
+		opt(w)
 	}
 
-	if workers.config == nil {
+	if w.config == nil {
 		return nil, ErrNoConfigProvided
 	}
 
-	if workers.driver == nil {
+	if w.driver == nil {
 		return nil, ErrNoDriverProvided
 	}
 
-	if workers.logger == nil {
-		workers.logger = log.NewGokit(os.Stdout)
+	if w.logger == nil {
+		w.logger = log.NewGokit(os.Stdout)
 	}
 
-	if err := workers.driver.Connect(); err != nil {
-		return nil, err
-	}
-
-	return workers, nil
+	return w, nil
 }
 
 type Workers struct {
 	config *Config
 	logger log.Logger
 	driver Driver
+}
+
+func (w *Workers) Start() error {
+	if err := w.driver.Ping(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (w *Workers) Stop() error {
+	return nil
 }

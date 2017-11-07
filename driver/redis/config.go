@@ -1,7 +1,7 @@
 package redis
 
 var (
-	defaultHost    = "localhost"
+	defaultHost    = "localhost:6379"
 	defaultPort    = 6379
 	defaultTimeout = 30
 	defaultMaxIdle = 3
@@ -9,7 +9,6 @@ var (
 
 type Config struct {
 	Host     string
-	Port     int
 	Password string
 	Database int
 	Timeout  int
@@ -19,10 +18,6 @@ type Config struct {
 func (c *Config) WithDefaults() *Config {
 	if c.Host == "" {
 		c.Host = defaultHost
-	}
-
-	if c.Port == 0 {
-		c.Port = defaultPort
 	}
 
 	if c.Timeout == 0 {

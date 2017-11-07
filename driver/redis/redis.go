@@ -27,51 +27,55 @@ func New(opts ...Option) *Redis {
 		r.logger = log.NewGokit(os.Stdout)
 	}
 
+	if r.pool == nil {
+		r.pool = &redis.Pool{
+			MaxIdle:     r.config.MaxIdle,
+			IdleTimeout: 180 * time.Second,
+			Dial: func() (redis.Conn, error) {
+				conn, err := redis.Dial("tcp", net.JoinHostPort(r.config.Host, strconv.Itoa(r.config.Port)))
+
+				if err != nil {
+					return nil, err
+				}
+
+				if r.config.Password != "" {
+					if _, err := conn.Do("AUTH", r.config.Password); err != nil {
+						conn.Close()
+						return nil, err
+					}
+				}
+
+				if r.config.Database >= 0 {
+					if _, err := conn.Do("SELECT", r.config.Database); err != nil {
+						conn.Close()
+						return nil, err
+					}
+				}
+
+				return conn, err
+			},
+			TestOnBorrow: func(conn redis.Conn, t time.Time) error {
+				if _, err := conn.Do("PING"); err != nil {
+					return err
+				}
+
+				return nill
+			},
+		}
+	}
+
 	return r
 }
 
 type Redis struct {
 	config *Config
 	logger log.Logger
-	handle *redis.Pool
+	pool   *redis.Pool
 }
 
-func (r Redis) Connect() error {
-	r.handle = &redis.Pool{
-		MaxIdle:     r.config.MaxIdle,
-		IdleTimeout: 180 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			conn, err := redis.Dial("tcp", net.JoinHostPort(r.config.Host, strconv.Itoa(r.config.Port)))
-
-			if err != nil {
-				return nil, err
-			}
-
-			if r.config.Password != "" {
-				if _, err := conn.Do("AUTH", r.config.Password); err != nil {
-					conn.Close()
-					return nil, err
-				}
-			}
-
-			if r.config.Database >= 0 {
-				if _, err := conn.Do("SELECT", r.config.Database); err != nil {
-					conn.Close()
-					return nil, err
-				}
-			}
-
-			return conn, err
-		},
-		TestOnBorrow: func(conn redis.Conn, t time.Time) error {
-			_, err := conn.Do("PING")
-
-			return err
-		},
-	}
-
+func (r Redis) Ping() error {
 	for i := 0; i < r.config.Timeout; i++ {
-		conn := r.handle.Get()
+		conn := r.pool.Get()
 		defer conn.Close()
 
 		if conn.Err() == nil {

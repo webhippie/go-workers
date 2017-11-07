@@ -30,6 +30,6 @@ type Memory struct {
 	logger log.Logger
 }
 
-func (m Memory) Connect() error {
+func (m Memory) Ping() error {
 	return nil
 }

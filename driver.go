@@ -1,5 +1,5 @@
 package workers
 
 type Driver interface {
-	Connect() error
+	Ping() error
 }
